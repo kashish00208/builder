@@ -15,11 +15,6 @@ import buildFileTree from "./BuildTreee";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 
-interface RawItem {
-  path: string;
-  content: string;
-}
-
 const ChatAI = () => {
   const [inputPrompt, setinputPrompt] = useState("");
   const [chatMsgs, setchatMsgs] = useState<{ sender: string; text: string }[]>(
@@ -135,7 +130,8 @@ const ChatAI = () => {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          messages: [...prompts, inputPrompt].map((content) => ({
+          messages: [
+            ...prompts, inputPrompt].map((content) => ({
             role: "user",
             content,
           })),
