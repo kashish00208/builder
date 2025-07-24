@@ -14,7 +14,6 @@ const NavBar = () => {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-[#0f0f0f]/95 backdrop-blur-md border-b border-gray-800 shadow-lg">
       <div className="max-w-7xl mx-auto flex justify-between items-center px-6 py-4">
-        {/* Brand Logo */}
         <Link href="/" className={`text-3xl font-extrabold tracking-wide text-white ${montserrat.className}`}>
           Builder<span className="text-purple-500">.ai</span>
         </Link>
