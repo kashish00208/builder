@@ -4,16 +4,22 @@ import dotenv from "dotenv"
 dotenv.config();
 import { useSearchParams } from "next/navigation";
 import { FaArrowRight } from "react-icons/fa";
-import { Step, FileItem, FileItems } from "../types/index";
+import { Step, FileItem } from "../types/index";
 import { WebContainer } from "@webcontainer/api";
-import { getWebContainerInstance } from "@/utils/webcontainer";
-import { parseXml } from "@/steps";
-import toWebContainerMount from "@/utils/fileStructure";
+import { getWebContainerInstance } from "../utils/webcontainer";
+import { parseXml } from "../steps";
+import toWebContainerMount from "../utils/fileStructure";
 import getLanguageFromExtension from "./Languatext";
 import TreeView from "./TreeVeiew";
 import buildFileTree from "./BuildTreee";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
+
+interface RawItem {
+  path: string;
+  content: string;
+}
+
 const ChatAI = () => {
   const [inputPrompt, setinputPrompt] = useState("");
   const [chatMsgs, setchatMsgs] = useState<{ sender: string; text: string }[]>(
@@ -41,12 +47,11 @@ const ChatAI = () => {
 
   const [language, setLanguage] = useState("plaintext");
 
-  const [filechanges, setFilechanges] = useState("");
   const searchParams = useSearchParams();
   const fileTree = buildFileTree(files);
 
   const hasSentInitialPromptRef = useRef(false);
-
+  console.log(steps);
   const handleFileClick = (filePath: string) => {
     const file = files.find((f) => f.path === filePath);
     if (file) {
@@ -66,7 +71,7 @@ const ChatAI = () => {
       },
       body: JSON.stringify({ prompt: inputPrompt }),
     });
-
+    console.log(prompt)
     const data = await response.json();
 
     const appType = data.type;
@@ -105,7 +110,7 @@ const ChatAI = () => {
       }
 
       const data = await res.json();
-      const { prompts, uiPrompts } = data;
+      const { prompts } = data;
       setSteps(
         parseXml(prompts[1]).map((x: Step) => ({
           ...x,
@@ -117,7 +122,7 @@ const ChatAI = () => {
 
       const results = parseXml(prompts[1]);
 
-      const generatedFiles: FileItem[] = results.map((item: any) => ({
+      const generatedFiles: FileItem[] = results.map((item:any) => ({
         name: item.path,
         type: "file",
         path: item.path,
