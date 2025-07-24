@@ -1,8 +1,9 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
+import dotenv from "dotenv"
+dotenv.config();
 import { useSearchParams } from "next/navigation";
 import { FaArrowRight } from "react-icons/fa";
-import { BACKEND_URL } from "../../config";
 import { Step, FileItem, FileItems } from "../types/index";
 import { WebContainer } from "@webcontainer/api";
 import { getWebContainerInstance } from "@/utils/webcontainer";
@@ -58,7 +59,7 @@ const ChatAI = () => {
   };
 
   async function getAppType(prompt: string) {
-    const response = await fetch(`${BACKEND_URL}/appType`, {
+    const response = await fetch(`${process.env.BACKEND_URL}/appType`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -89,7 +90,7 @@ const ChatAI = () => {
     setchatMsgs((prev) => [...prev, userMessage]);
 
     try {
-      const res = await fetch(`${BACKEND_URL}/template`, {
+      const res = await fetch(`${process.env.BACKEND_URL}/template`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -125,7 +126,7 @@ const ChatAI = () => {
 
       setFiles(generatedFiles);
       console.log(generatedFiles);
-      const filesRespose = await fetch(`${BACKEND_URL}/chat`, {
+      const filesRespose = await fetch(`${process.env.BACKEND_URL}/chat`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
