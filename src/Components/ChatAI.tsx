@@ -117,7 +117,11 @@ const ChatAI = () => {
 
       const results = parseXml(prompts[1]);
 
-      const generatedFiles: FileItem[] = results.map((item:any) => ({
+      function isValid(item:any) :item is FileItem {
+        return typeof item.path==="string" && typeof item.content==="string"
+      }
+
+      const generatedFiles: FileItem[] = results.filter(isValid).map((item:any) => ({
         name: item.path,
         type: "file",
         path: item.path,

@@ -1,4 +1,3 @@
-// utils/webcontainerManager.ts
 import { WebContainer } from "@webcontainer/api";
 
 let webcontainerInstance: WebContainer | null = null;
