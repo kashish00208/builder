@@ -15,6 +15,10 @@ import buildFileTree from "./BuildTreee";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 
+interface FileSource {
+  path: string;
+  content: string;
+}
 const ChatAI = () => {
   const [inputPrompt, setinputPrompt] = useState("");
   const [chatMsgs, setchatMsgs] = useState<{ sender: string; text: string }[]>(
@@ -117,16 +121,16 @@ const ChatAI = () => {
 
       const results = parseXml(prompts[1]);
 
-      function isValid(item:any) :item is FileItem {
-        return typeof item.path==="string" && typeof item.content==="string"
-      }
+      
 
-      const generatedFiles: FileItem[] = results.filter(isValid).map((item:any) => ({
-        name: item.path,
-        type: "file",
-        path: item.path,
-        content: item.content,
-      }));
+
+const generatedFiles: FileItem[] = results.map((item: FileSource) => ({
+  name: item.path,
+  type: "file",
+  path: item.path,
+  content: item.content,
+}));
+
 
       setFiles(generatedFiles);
       console.log(generatedFiles);
