@@ -1,7 +1,5 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
-import dotenv from "dotenv";
-dotenv.config();
 import { useSearchParams } from "next/navigation";
 import { FaArrowRight } from "react-icons/fa";
 import { Step, FileItem } from "../types/index";
@@ -15,10 +13,6 @@ import buildFileTree from "./BuildTreee";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 
-interface FileSource {
-  path: string;
-  content: string;
-}
 const ChatAI = () => {
   const [inputPrompt, setinputPrompt] = useState("");
   const [chatMsgs, setchatMsgs] = useState<{ sender: string; text: string }[]>(
@@ -63,7 +57,7 @@ const ChatAI = () => {
   };
 
   async function getAppType(prompt: string) {
-    const response = await fetch(`${process.env.BACKEND_URL}/appType`, {
+    const response = await fetch(`${process.env.NEXT_API_URL}/appType`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -85,6 +79,7 @@ const ChatAI = () => {
   };
 
   const sendMessage = async (inputPrompt: string) => {
+    console.log(process.env.BACKEND_URL);
     if (!inputPrompt.trim()) return;
 
     setLoading(true);
@@ -94,7 +89,7 @@ const ChatAI = () => {
     setchatMsgs((prev) => [...prev, userMessage]);
 
     try {
-      const res = await fetch(`${process.env.BACKEND_URL}/template`, {
+      const res = await fetch(`${process.env.NEXT_API_URL}/template`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -121,16 +116,16 @@ const ChatAI = () => {
 
       const results = parseXml(prompts[1]);
 
-      const generatedFiles: FileItem[] = results.map((item: Step) => ({
-        name: item.path ?? "unknown",
+      const generatedFiles: FileItem[] = results.map((item: any) => ({
+        name: item.path,
         type: "file",
-        path: item.path ?? "unknown",
-        content: item.content ?? "",
+        path: item.path,
+        content: item.content,
       }));
 
       setFiles(generatedFiles);
       console.log(generatedFiles);
-      const filesRespose = await fetch(`${process.env.BACKEND_URL}/chat`, {
+      const filesRespose = await fetch(`${process.env.NEXT_API_URL}/chat`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -213,6 +208,7 @@ const ChatAI = () => {
   }, [searchParams]);
 
   const handlePreviewClick = async () => {
+    if (files.length === 0) return; // nothing to preview
     setIsPreviewing(true);
     setError("");
 
@@ -222,61 +218,43 @@ const ChatAI = () => {
         wc = await getWebContainerInstance();
         setWebcontainer(wc);
       }
+
       const fileMap = toWebContainerMount(files);
       await wc.mount(fileMap);
-
-      // Step 1: Run npm install
 
       const installProcess = await wc.spawn("npm", ["install"]);
       installProcess.output.pipeTo(
         new WritableStream({
           write(data) {
-            const clean = data.replace(/\x1B\[.*?m/g, "").trim();
-            if (clean && !["|", "/", "-", "\\"].includes(clean)) {
-              console.log("[install]", clean);
-            }
+            const text =
+              typeof data === "string" ? data : new TextDecoder().decode(data);
+            console.log("[install]", text.replace(/\x1B\[.*?m/g, "").trim());
           },
         })
       );
       await installProcess.exit;
-
-      console.log("agar yaha tak pohch gyi toh samjh hogya tera");
-
-      // Step 2: Determine project type
+      console.log("✅ npm install finished");
 
       const projectType = await getAppType(inputPrompt);
-      console.log(projectType);
-      let isReactApp: boolean = false;
-      let isNodeApp: boolean = false;
-      if (projectType === "react") {
-        isReactApp = true;
-      } else if (projectType === "node") {
-        isNodeApp = true;
-      }
+      const isReactApp = projectType === "react";
+      const devCommand = isReactApp ? ["run", "dev"] : ["start"];
 
-      // Step 3: Run the appropriate command
-      let devProcess;
-
-      if (isReactApp) {
-        devProcess = await wc.spawn("npm", ["run", "dev"]);
-      } else if (isNodeApp) {
-        devProcess = await wc.spawn("npm", ["start"]);
-      } else {
-        throw new Error("Could not detect project type");
-      }
-
-      // Step 4: Capture the local server URL
+      const devProcess = await wc.spawn("npm", devCommand);
       devProcess.output.pipeTo(
         new WritableStream({
           write(data) {
-            console.log("[dev]", data);
-            const match = data.match(/(http:\/\/localhost:\d+)/);
-            if (match && !previewUrl) {
-              setPreviewUrl(match[1]);
-            }
+            const text =
+              typeof data === "string" ? data : new TextDecoder().decode(data);
+            console.log("[dev]", text.replace(/\x1B\[.*?m/g, "").trim());
           },
         })
       );
+
+      const port = isReactApp ? 5173 : 3000;
+
+      const previewUrl = `https://webcontainer.localhost:${port}`;
+      setPreviewUrl(previewUrl);
+      console.log("🚀 Preview ready at iframe:", previewUrl);
     } catch (err) {
       console.error(err);
       setError("Failed to launch preview.");
@@ -308,104 +286,50 @@ const ChatAI = () => {
     };
   }, []);
 
+  const handleDownloadZip = () => {};
+
   return (
-    <div className="h-screen pt-20 px-6 pb-4 border-gray-700 flex">
-      {/* Chat Panel */}
-      <div
-        className="rounded-lg shadow-md p-4 overflow-hidden border-r border-gray-700 flex flex-col"
-        style={{ width: `${chatWidth}%`, minWidth: 240, maxWidth: "70%" }}
-      >
-        <div className="flex-1 flex flex-col h-0">
-          <div className="flex-1 overflow-y-auto mb-4 space-y-2">
-            {chatMsgs.map((msg, index) => (
-              <div
-                key={index}
-                className={`flex ${
-                  msg.sender === "user" ? "justify-end" : "justify-start"
-                }`}
-              >
-                <div
-                  className={`px-4 py-2 rounded-lg max-w-xs ${
-                    msg.sender === "user"
-                      ? "bg-blue-500 text-white"
-                      : "bg-gray-200 text-black"
-                  }`}
-                >
-                  {msg.text}
-                </div>
-              </div>
-            ))}
-            <div ref={msgEnding} />
-          </div>
-
-          {error && <div className="text-red-600 mb-2 text-sm">{error}</div>}
-
-          <form onSubmit={handleSubmitForm} className="w-full">
-            <div className="relative">
-              <textarea
-                rows={2}
-                placeholder="Describe your idea..."
-                value={inputPrompt}
-                onChange={handleInputChange}
-                className="w-full px-6 py-4 pr-14 rounded-xl border border-gray-700 shadow-sm focus:ring-2 text-white resize-none bg-[#222] focus:outline-none"
-                disabled={loading}
-              />
-              <button
-                type="submit"
-                className="absolute top-3 right-4 text-gray-700 hover:text-gray-900 transition-colors"
-                disabled={loading}
-              >
-                <FaArrowRight size={20} />
-              </button>
-            </div>
-          </form>
+    <div className="h-screen w-screen flex flex-col bg-[#1e1e1e] text-gray-100">
+      <div className="flex justify-between items-center p-4 border-b border-gray-700 bg-[#1f1f1f] shadow-sm rounded-t-lg">
+        <div className="text-xl font-semibold text-white">Builder</div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleDownloadZip}
+            className="px-4 py-2 rounded-md bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition-colors duration-200"
+          >
+            Download Zip
+          </button>
+          <button
+            onClick={handlePreviewClick}
+            disabled={isPreviewing || files.length === 0}
+            className={`px-4 py-2 rounded-md bg-blue-600 text-white text-sm font-medium transition-colors duration-200 ${
+              isPreviewing
+                ? "opacity-50 cursor-not-allowed"
+                : "hover:bg-blue-700"
+            }`}
+          >
+            {isPreviewing ? "Launching Preview..." : "Preview Project"}
+          </button>
         </div>
       </div>
 
-      {/* Divider */}
-      <div
-        className="w-1 bg-gray-600 cursor-col-resize hover:bg-gray-400 mr-5"
-        onMouseDown={() => (isDragging.current = true)}
-        style={{ minWidth: 4, maxWidth: 8 }}
-      />
+      <div className="flex flex-1 min-h-0 overflow-hidden">
+        {/* File Explorer */}
+        <div className="w-64 bg-[#252526] border-r border-gray-700 p-4 flex-shrink-0 overflow-y-auto">
+          <h3 className="text-sm font-bold text-gray-300 p-2 border-b border-gray-600">
+            EXPLORER
+          </h3>
+          <TreeView
+            nodes={fileTree}
+            onFileClick={(file) => handleFileClick(file.path)}
+            selectedFile={selectedFile}
+          />
+        </div>
 
-      {/* Code Editor Panel */}
-      <div
-        className="rounded-lg shadow-md p-4 overflow-hidden bg-[#1e1e1e] flex-1 flex flex-col"
-        style={{ width: `${100 - chatWidth}%`, minWidth: 280 }}
-      >
-        <div className="flex h-full font-mono text-gray-100 min-h-0">
-          <div className="w-48 bg-[#252526] border-r border-gray-700 p-4 flex-shrink-0">
-            <h3 className="text-sm font-bold text-gray-300 p-2 border-b border-slate-600">
-              EXPLORER
-            </h3>
-            <TreeView
-              nodes={fileTree}
-              onFileClick={(file) => handleFileClick(file.path)}
-              selectedFile={selectedFile}
-            />
-          </div>
-          {/* File content */}
-          <div className="flex-1 flex flex-col min-h-0">
-            <div className="flex justify-between bg-[#1e1e1e] border-b border-gray-700 p-2">
-              <div className="px-4 py-2 text-sm font-semibold text-white truncate">
-                {selectedFile || "Select a file"}
-              </div>
-              <div>
-                <button
-                  onClick={handlePreviewClick}
-                  disabled={isPreviewing || files.length === 0}
-                  className={`px-4 py-2 rounded bg-blue-600 text-white text-sm font-medium ${
-                    isPreviewing
-                      ? "opacity-50 cursor-not-allowed"
-                      : "hover:bg-blue-700"
-                  }`}
-                >
-                  {isPreviewing ? "Launching Preview..." : "Preview Project"}
-                </button>
-              </div>
-            </div>
-            <div className="flex-1 overflow-y-auto p-2">
+        {/* File content and preview */}
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          <div className="flex-1 flex overflow-hidden">
+            <div className="flex-1 overflow-y-auto p-4">
               {previewUrl && (
                 <div className="mb-4">
                   <h3 className="text-white font-semibold mb-2">
