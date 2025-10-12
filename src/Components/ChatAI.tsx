@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
-import dotenv from "dotenv"
+import dotenv from "dotenv";
 dotenv.config();
 import { useSearchParams } from "next/navigation";
 import { FaArrowRight } from "react-icons/fa";
@@ -70,7 +70,7 @@ const ChatAI = () => {
       },
       body: JSON.stringify({ prompt: inputPrompt }),
     });
-    console.log(prompt)
+    console.log(prompt);
     const data = await response.json();
 
     const appType = data.type;
@@ -121,16 +121,12 @@ const ChatAI = () => {
 
       const results = parseXml(prompts[1]);
 
-      
-
-
-const generatedFiles: FileItem[] = results.map((item: FileSource) => ({
-  name: item.path,
-  type: "file",
-  path: item.path,
-  content: item.content,
-}));
-
+      const generatedFiles: FileItem[] = results.map((item: Step) => ({
+        name: item.path ?? "unknown",
+        type: "file",
+        path: item.path ?? "unknown",
+        content: item.content ?? "",
+      }));
 
       setFiles(generatedFiles);
       console.log(generatedFiles);
@@ -138,8 +134,7 @@ const generatedFiles: FileItem[] = results.map((item: FileSource) => ({
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          messages: [
-            ...prompts, inputPrompt].map((content) => ({
+          messages: [...prompts, inputPrompt].map((content) => ({
             role: "user",
             content,
           })),
