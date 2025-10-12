@@ -19,7 +19,8 @@ export function parseXml(response: string): Step[] {
       title: artifactTitle,
       description: '',
       type: StepType.CreateFolder,
-      status: 'pending'
+      status: 'pending',
+      content: ''
     });
   
     const actionRegex = /<boltAction\s+type="([^"]*)"(?:\s+filePath="([^"]*)")?>([\s\S]*?)<\/boltAction>/g;
@@ -36,7 +37,8 @@ export function parseXml(response: string): Step[] {
           type: StepType.CreateFile,
           status: 'pending',
           code: content.trim(),
-          path: filePath
+          path: filePath,
+          content: content.trim()
         });
       } else if (type === 'shell') {
         steps.push({
@@ -45,7 +47,8 @@ export function parseXml(response: string): Step[] {
           description: '',
           type: StepType.RunScript,
           status: 'pending',
-          code: content.trim()
+          code: content.trim(),
+          content: content.trim()
         });
       }
     }

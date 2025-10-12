@@ -1,7 +1,6 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { FaArrowRight } from "react-icons/fa";
 import { Step, FileItem } from "../types/index";
 import { WebContainer } from "@webcontainer/api";
 import { getWebContainerInstance } from "../utils/webcontainer";
@@ -25,12 +24,6 @@ const ChatAI = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isPreviewing, setIsPreviewing] = useState(false);
 
-  const [chatWidth, setChatWidth] = useState(40);
-
-  const isDragging = useRef(false);
-
-  const minWidth = 20;
-  const maxxWidth = 80;
 
   const [steps, setSteps] = useState<Step[]>([]);
   const [files, setFiles] = useState<FileItem[]>([]);
@@ -42,6 +35,7 @@ const ChatAI = () => {
 
   const searchParams = useSearchParams();
   const fileTree = buildFileTree(files);
+  console.log(loading)
 
   const hasSentInitialPromptRef = useRef(false);
   console.log(steps);
@@ -74,15 +68,13 @@ const ChatAI = () => {
     return appType;
   }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setinputPrompt(e.target.value);
-  };
 
   const sendMessage = async (inputPrompt: string) => {
     console.log(process.env.BACKEND_URL);
     if (!inputPrompt.trim()) return;
 
     setLoading(true);
+    console.log(error)
     setError("");
 
     const userMessage = { sender: "user", text: inputPrompt };
@@ -184,15 +176,6 @@ const ChatAI = () => {
       setinputPrompt("");
     }
   };
-  const handleSubmitForm = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = inputPrompt.trim();
-    if (!trimmed) {
-      return;
-    }
-    await sendMessage(trimmed);
-    setinputPrompt("");
-  };
 
   useEffect(() => {
     msgEnding.current?.scrollIntoView({ behavior: "smooth" });
@@ -263,28 +246,7 @@ const ChatAI = () => {
     }
   };
 
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isDragging.current) return;
-      // as percent
-      const netWidth = (e.clientX / window.innerWidth) * 100;
-      if (netWidth >= minWidth && netWidth <= maxxWidth) {
-        setChatWidth(netWidth);
-      }
-    };
-
-    const stopDragging = () => {
-      isDragging.current = false;
-    };
-
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", stopDragging);
-
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", stopDragging);
-    };
-  }, []);
+  
 
   const handleDownloadZip = () => {};
 
