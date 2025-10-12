@@ -108,10 +108,10 @@ const ChatAI = () => {
 
       const results = parseXml(prompts[1]);
 
-      const generatedFiles: FileItem[] = results.map((item: any) => ({
-        name: item.path,
+      const generatedFiles: FileItem[] = results.map((item) => ({
+        name: item.path ?? "",
         type: "file",
-        path: item.path,
+        path: item.path ?? "",
         content: item.content,
       }));
 
@@ -188,7 +188,7 @@ const ChatAI = () => {
       sendMessage(initialPrompt);
       setinputPrompt("");
     }
-  }, [searchParams]);
+  }, [searchParams ,sendMessage]);
 
   const handlePreviewClick = async () => {
     if (files.length === 0) return; // nothing to preview
