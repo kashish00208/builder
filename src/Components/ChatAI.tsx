@@ -188,7 +188,7 @@ const ChatAI = () => {
       sendMessage(initialPrompt);
       setinputPrompt("");
     }
-  }, [searchParams ,sendMessage]);
+  }, [searchParams]);
 
   const handlePreviewClick = async () => {
     if (files.length === 0) return; // nothing to preview
